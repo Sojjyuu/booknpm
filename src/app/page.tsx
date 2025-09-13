@@ -1,95 +1,180 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useEffect, useState } from "react";
+import {
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  CardActions,
+  Button,
+  CircularProgress,
+  CardMedia,
+  Box,
+  Stack,
+  Rating,
+} from "@mui/material";
+import type { BookResponse, Book } from "../types/book";
+import Link from "next/link";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [booksData, setBooksData] = useState<Book[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const getData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/books");
+      if (response.ok) {
+        const data = await response.json();
+        const resData: BookResponse = data;
+        setBooksData(resData.books);
+      }
+    } catch (error) {
+      console.error("Error fetching books:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  return (
+    <Container sx={{ py: 6 }}>
+      <Typography
+        variant="h3"
+        component="h1"
+        gutterBottom
+        textAlign="center"
+        fontWeight="bold"
+        sx={{ mb: 4, color: "#2c3e50" }}
+      >
+        📚 รายการหนังสือ
+      </Typography>
+
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+          <CircularProgress size={60} />
+        </Box>
+      ) : (
+        <Grid container spacing={4}>
+          {booksData.map((book) => (
+            <Grid item key={book._id} xs={12} sm={6} md={4}>
+              <Card
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 3,
+                  boxShadow: 3,
+                  transition: "box-shadow 0.3s ease",
+                  "&:hover": {
+                    boxShadow: 8,
+                    transform: "translateY(-4px)",
+                  },
+                }}
+                elevation={4}
+              >
+                {/* รูปปกหนังสือ */}
+                {book.coverImage ? (
+                  <CardMedia
+                    component="img"
+                    image={book.coverImage}
+                    alt={book.title}
+                    sx={{
+                      height: 220,
+                      objectFit: "cover",
+                      borderTopLeftRadius: 12,
+                      borderTopRightRadius: 12,
+                      transition: "transform 0.3s ease",
+                      "&:hover": {
+                        transform: "scale(1.05)",
+                      },
+                    }}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      height: 220,
+                      bgcolor: "#e0e0e0",
+                      borderTopLeftRadius: 12,
+                      borderTopRightRadius: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#9e9e9e",
+                      fontSize: 24,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    ไม่มีรูปปก
+                  </Box>
+                )}
+
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    gutterBottom
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={book.title}
+                  >
+                    {book.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={book.author}
+                  >
+                    ✍️ {book.author}
+                  </Typography>
+
+                  {/* สมมติแสดง rating ถ้ามี */}
+                  {"rating" in book && book.rating !== undefined && (
+                    <Stack direction="row" alignItems="center" spacing={1} mt={1}>
+                      <Rating
+                        name="read-only"
+                        value={book.rating}
+                        precision={0.1}
+                        readOnly
+                        size="small"
+                      />
+                      <Typography variant="body2" color="text.secondary">
+                        {book.rating.toFixed(1)}
+                      </Typography>
+                    </Stack>
+                  )}
+                </CardContent>
+
+                <CardActions sx={{ px: 2, pb: 2 }}>
+                  <Link href={`/book/${book._id}`} passHref>
+                    <Button
+                      size="medium"
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      ดูรายละเอียด
+                    </Button>
+                  </Link>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Container>
   );
 }
