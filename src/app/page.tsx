@@ -13,14 +13,22 @@ import {
   Box,
   Stack,
   Rating,
+  Divider,
 } from "@mui/material";
 import type { BookResponse, Book } from "../types/book";
 import Link from "next/link";
 
+interface User {
+  username: string;
+  email: string;
+}
+
 export default function Home() {
   const [booksData, setBooksData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser ] = useState<User | null>(null);
 
+  // ดึงข้อมูลหนังสือ
   const getData = async () => {
     setIsLoading(true);
     try {
@@ -37,12 +45,37 @@ export default function Home() {
     }
   };
 
+  // ดึงข้อมูลผู้ใช้จาก localStorage (หรือจากที่เก็บ token/user)
   useEffect(() => {
     getData();
+
+    // สมมติเก็บข้อมูล user ไว้ใน localStorage เป็น JSON string
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const userObj: User = JSON.parse(userStr);
+        setUser (userObj);
+      } catch {
+        setUser (null);
+      }
+    }
   }, []);
 
   return (
     <Container sx={{ py: 6 }}>
+      {/* แสดงข้อมูลผู้ใช้ */}
+      {user && (
+        <Box sx={{ mb: 4, textAlign: "center" }}>
+          <Typography variant="h5" fontWeight="bold">
+            ยินดีต้อนรับ, {user.username}!
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            อีเมล: {user.email}
+          </Typography>
+          <Divider sx={{ mt: 2 }} />
+        </Box>
+      )}
+
       <Typography
         variant="h3"
         component="h1"
@@ -77,7 +110,6 @@ export default function Home() {
                 }}
                 elevation={4}
               >
-                {/* รูปปกหนังสือ */}
                 {book.coverImage ? (
                   <CardMedia
                     component="img"
@@ -140,7 +172,6 @@ export default function Home() {
                     ✍️ {book.author}
                   </Typography>
 
-                  {/* สมมติแสดง rating ถ้ามี */}
                   {"rating" in book && book.rating !== undefined && (
                     <Stack direction="row" alignItems="center" spacing={1} mt={1}>
                       <Rating
