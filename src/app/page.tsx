@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import type { BookResponse, Book } from "../types/book";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface User {
   username: string;
@@ -26,7 +27,8 @@ interface User {
 export default function Home() {
   const [booksData, setBooksData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser ] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   // ดึงข้อมูลหนังสือ
   const getData = async () => {
@@ -45,21 +47,26 @@ export default function Home() {
     }
   };
 
-  // ดึงข้อมูลผู้ใช้จาก localStorage (หรือจากที่เก็บ token/user)
+  // ดึงข้อมูลผู้ใช้จาก localStorage
   useEffect(() => {
     getData();
-
-    // สมมติเก็บข้อมูล user ไว้ใน localStorage เป็น JSON string
     const userStr = localStorage.getItem("user");
     if (userStr) {
       try {
         const userObj: User = JSON.parse(userStr);
-        setUser (userObj);
+        setUser(userObj);
       } catch {
-        setUser (null);
+        setUser(null);
       }
     }
   }, []);
+
+  // ฟังก์ชัน Logout
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push("/login"); // เปลี่ยนเส้นทางไปหน้า login
+  };
 
   return (
     <Container sx={{ py: 6 }}>
@@ -72,7 +79,18 @@ export default function Home() {
           <Typography variant="subtitle1" color="text.secondary">
             อีเมล: {user.email}
           </Typography>
-          <Divider sx={{ mt: 2 }} />
+
+          {/* ปุ่ม Logout */}
+          <Button
+            variant="outlined"
+            color="error"
+            sx={{ mt: 2, fontWeight: "bold" }}
+            onClick={handleLogout}
+          >
+            ออกจากระบบ
+          </Button>
+
+          <Divider sx={{ mt: 3 }} />
         </Box>
       )}
 
