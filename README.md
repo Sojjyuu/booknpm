@@ -171,7 +171,7 @@ Authenticated Actions: ใช้ localStorage.getItem("token") สำหรั�
 
 🤝 ขอบคุณและติดต่อ
 
-    ผู้พัฒนา: [Your Name] (AI Assistant ช่วย refactor)
-    License: MIT (หรือปรับตามต้องการ)
+    ผู้พัฒนา: [ราชาเพลงเศร้า] (AI Assistant ช่วย refactor)
+    License: MIT (กท256)
     Issues: ถ้ามี bug หรือ feature request สร้าง issue ใน repo
     Debug Tip: ถ้า error ดู console (F12) และ network tab สำหรับ API responses
