@@ -2,179 +2,165 @@
 import { Book } from "@/types/book";
 import {
   Box,
-  Container,
   Typography,
-  Card,
-  CardContent,
-  Button,
-  CircularProgress,
-  CardMedia,
-  Grid,
-  Rating,
+  Paper,
   Divider,
+  Stack,
+  Button,
+  Chip,
 } from "@mui/material";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 
-export default function BookDetailPage() {
+export default function Page() {
   const { id } = useParams();
+  const router = useRouter();
   const [book, setBook] = useState<Book | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // สมมติเพิ่ม rating และ reviews (ถ้าไม่มีใน API จริงให้ลบออก)
-  const [rating, setRating] = useState(4.2);
-  const [reviewsCount, setReviewsCount] = useState(128);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`http://localhost:3000/api/books/${id}`);
-        if (response.ok) {
-          const data = await response.json();
-          const _book: Book = data["book"];
-          setBook(_book);
+      if (id) {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`http://localhost:3000/api/books/${id}`);
+          if (response.ok) {
+            const data = await response.json();
+            const _book: Book = data["book"];
+            setBook(_book);
+          }
+        } catch (error) {
+          console.error("Error fetching book:", error);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching book:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
-    if (id !== undefined) {
-      fetchData();
-    }
+    fetchData();
   }, [id]);
 
-  if (isLoading) {
-    return (
-      <Container maxWidth="md" sx={{ py: 10, textAlign: "center" }}>
-        <CircularProgress size={60} />
-      </Container>
-    );
-  }
-
-  if (!book) {
-    return (
-      <Container maxWidth="md" sx={{ py: 10, textAlign: "center" }}>
-        <Typography variant="h5" color="error" gutterBottom>
-          ❌ ไม่พบข้อมูลหนังสือ
-        </Typography>
-        <Link href="/" passHref>
-          <Button variant="outlined" sx={{ mt: 2 }}>
-            ⬅️ กลับไปหน้ารายการ
-          </Button>
-        </Link>
-      </Container>
-    );
-  }
-
   return (
-    <Container maxWidth="lg" sx={{ py: 6 }}>
-      <Card
-        sx={{
-          display: "flex",
-          flexDirection: { xs: "column", md: "row" },
-          borderRadius: 4,
-          boxShadow: 6,
-          overflow: "hidden",
-          bgcolor: "#fafafa",
-        }}
-      >
-        {/* รูปปกหนังสือ */}
-        {book.coverImage && (
-          <CardMedia
-            component="img"
-            image={book.coverImage}
-            alt={book.title}
-            sx={{
-              width: { xs: "100%", md: 350 },
-              height: { xs: 400, md: "auto" },
-              objectFit: "cover",
-              flexShrink: 0,
-            }}
-          />
-        )}
-
-        <CardContent sx={{ flex: 1, p: { xs: 3, md: 5 } }}>
-          <Typography
-            variant="h3"
-            fontWeight="bold"
-            gutterBottom
-            sx={{ color: "#2c3e50" }}
-          >
-            {book.title}
-          </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              mb: 2,
-              gap: 1,
-            }}
-          >
-            <Rating
-              name="book-rating"
-              value={rating}
-              precision={0.1}
-              readOnly
-              size="medium"
-            />
-            <Typography variant="body2" color="text.secondary">
-              ({reviewsCount} รีวิว)
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "#fdfaf6",
+        py: 6,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+      }}
+    >
+      <Box sx={{ width: "100%", maxWidth: 700, px: 2 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            background: "#fff",
+            borderRadius: "14px",
+            boxShadow: "0px 6px 18px rgba(0,0,0,0.08)",
+            border: "1px solid #e8dfd3",
+            p: { xs: 3, sm: 5 },
+          }}
+        >
+          {/* Header */}
+          <Box display="flex" alignItems="center" mb={3}>
+            <LibraryBooksIcon sx={{ fontSize: 40, color: "#6a994e", mr: 2 }} />
+            <Typography
+              variant="h4"
+              fontWeight="bold"
+              sx={{
+                color: "#4b3f2f",
+                textShadow: "1px 1px 3px rgba(0,0,0,0.1)",
+              }}
+            >
+              รายละเอียดหนังสือ
             </Typography>
           </Box>
 
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
-            ✍️ ผู้แต่ง: <strong>{book.author}</strong>
-          </Typography>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
-            🏢 สำนักพิมพ์: {book.publisher}
-          </Typography>
-          <Typography variant="subtitle1" sx={{ mb: 1 }}>
-            📅 ปีที่พิมพ์: {book.year}
-          </Typography>
+          <Divider sx={{ mb: 3, borderColor: "#e8dfd3" }} />
 
-          <Divider sx={{ my: 3 }} />
-
-          <Typography variant="h6" gutterBottom>
-            📖 รายละเอียดหนังสือ
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ whiteSpace: "pre-line", mb: 4 }}
-          >
-            {book.description}
-          </Typography>
-
-          {/* ปุ่มซื้อหนังสือ */}
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              sx={{ flexGrow: 1, maxWidth: 200 }}
-              onClick={() => alert("เพิ่มสินค้าลงตะกร้า (สมมติ)")}
+          {isLoading ? (
+            <Typography
+              variant="body1"
+              sx={{ textAlign: "center", color: "#6a994e", fontWeight: 500 }}
             >
-              🛒 ซื้อหนังสือ
-            </Button>
-
-            <Link href="/" passHref>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="large"
-                sx={{ flexGrow: 1, maxWidth: 200 }}
+              📚 กำลังโหลดข้อมูลหนังสือ...
+            </Typography>
+          ) : book ? (
+            <Stack spacing={2}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, color: "#4b3f2f", mb: 1 }}
               >
-                ⬅️ กลับไปหน้ารายการ
-              </Button>
-            </Link>
-          </Box>
-        </CardContent>
-      </Card>
-    </Container>
+                📖 {book.title}
+              </Typography>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  label={`✍️ ผู้แต่ง: ${book.author}`}
+                  size="small"
+                  sx={{
+                    bgcolor: "#f1f8e9",
+                    color: "#2e7d32",
+                    fontWeight: 500,
+                  }}
+                />
+                {book.year && (
+                  <Chip
+                    label={`📅 ปีที่พิมพ์: ${book.year}`}
+                    size="small"
+                    sx={{
+                      bgcolor: "#fff8e1",
+                      color: "#f57f17",
+                      fontWeight: 500,
+                    }}
+                  />
+                )}
+              </Stack>
+
+              <Divider sx={{ my: 2, borderColor: "#f1e8da" }} />
+
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#4b3f2f",
+                  lineHeight: 1.7,
+                  whiteSpace: "pre-line",
+                }}
+              >
+                {book.description || "ไม่มีคำอธิบายสำหรับหนังสือเล่มนี้"}
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography
+              variant="body1"
+              sx={{ textAlign: "center", color: "#b71c1c" }}
+            >
+              ❌ ไม่พบข้อมูลหนังสือ
+            </Typography>
+          )}
+
+          <Divider sx={{ mt: 3, mb: 2, borderColor: "#e8dfd3" }} />
+
+          <Button
+            variant="outlined"
+            onClick={() => router.back()}
+            sx={{
+              borderColor: "#6a994e",
+              color: "#6a994e",
+              fontWeight: 600,
+              borderRadius: 2,
+              "&:hover": {
+                borderColor: "#527c3a",
+                color: "#527c3a",
+                bgcolor: "#f8f5f0",
+              },
+            }}
+          >
+            ← ย้อนกลับ
+          </Button>
+        </Paper>
+      </Box>
+    </Box>
   );
 }

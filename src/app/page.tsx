@@ -2,228 +2,220 @@
 import { useEffect, useState } from "react";
 import {
   Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  CircularProgress,
-  CardMedia,
   Box,
+  Button,
   Stack,
-  Rating,
-  Divider,
+  TextField,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import type { BookResponse, Book } from "../types/book";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { User } from "./types/user"; // สมมติว่ามี type User
 
-interface User {
-  username: string;
-  email: string;
-}
+// Import components ที่แยกออกมา
+import AuthSection from "./components/AuthSection";
+import HeaderBanner from "./components/HeaderBanner";
+import SearchBar from "./components/SearchBar";
+import BookList from "./components/BookList";
+import AddBookModal from "./components/AddBookModal";
+import EditBookModal from "./components/EditBookModal";
 
 export default function Home() {
   const [booksData, setBooksData] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const router = useRouter();
+  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+  const [newBook, setNewBook] = useState({
+    title: "",
+    author: "",
+    description: "",
+    genre: "",
+    year: 2024,
+    price: 0,
+    available: true,
+  });
+  const [editBook, setEditBook] = useState<Book | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // ดึงข้อมูลหนังสือ
   const getData = async () => {
     setIsLoading(true);
-    try {
-      const response = await fetch("http://localhost:3000/api/books");
-      if (response.ok) {
-        const data = await response.json();
-        const resData: BookResponse = data;
-        setBooksData(resData.books);
-      }
-    } catch (error) {
-      console.error("Error fetching books:", error);
-    } finally {
-      setIsLoading(false);
+    const response = await fetch("http://localhost:3000/api/books");
+    if (response.ok) {
+      const data = await response.json();
+      const resData: BookResponse = data;
+      setBooksData(resData.books);
     }
+    setIsLoading(false);
   };
 
-  // ดึงข้อมูลผู้ใช้จาก localStorage
   useEffect(() => {
     getData();
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        const userObj: User = JSON.parse(userStr);
-        setUser(userObj);
-      } catch {
-        setUser(null);
-      }
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
-  // ฟังก์ชัน Logout
   const handleLogout = () => {
     localStorage.removeItem("user");
     setUser(null);
-    router.push("/login"); // เปลี่ยนเส้นทางไปหน้า login
+  };
+
+  const handleNewBookChange = (updates: Partial<typeof newBook>) => {
+    setNewBook((prev) => ({ ...prev, ...updates }));
+  };
+
+  const handleNewBook = async () => {
+    const token = localStorage.getItem("token");
+    await fetch("http://localhost:3000/api/books", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify(newBook),
+    });
+    setIsNewDialogOpen(false);
+    setNewBook({
+      title: "",
+      author: "",
+      description: "",
+      genre: "",
+      year: 2024,
+      price: 0,
+      available: true,
+    });
+    getData(); // refresh book list
+  };
+
+  const handleDeleteBook = async (id: string) => {
+    const token = localStorage.getItem("token");
+    await fetch(`http://localhost:3000/api/books/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+    getData(); // refresh book list
+  };
+
+  const openEditDialog = (book: Book) => {
+    setEditBook(book);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditBookChange = (updates: Partial<Book>) => {
+    if (editBook) {
+      setEditBook((prev) => ({ ...prev, ...updates }));
+    }
+  };
+
+  const handleUpdateBook = async () => {
+    if (!editBook) return;
+    const token = localStorage.getItem("token");
+    await fetch(`http://localhost:3000/api/books/${editBook._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify(editBook),
+    });
+    setIsEditDialogOpen(false);
+    setEditBook(null);
+    getData(); // refresh book list
   };
 
   return (
-    <Container sx={{ py: 6 }}>
-      {/* แสดงข้อมูลผู้ใช้ */}
-      {user && (
-        <Box sx={{ mb: 4, textAlign: "center" }}>
-          <Typography variant="h5" fontWeight="bold">
-            ยินดีต้อนรับ, {user.username}!
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            อีเมล: {user.email}
-          </Typography>
-
-          {/* ปุ่ม Logout */}
-          <Button
-            variant="outlined"
-            color="error"
-            sx={{ mt: 2, fontWeight: "bold" }}
-            onClick={handleLogout}
-          >
-            ออกจากระบบ
-          </Button>
-
-          <Divider sx={{ mt: 3 }} />
-        </Box>
-      )}
-
-      <Typography
-        variant="h3"
-        component="h1"
-        gutterBottom
-        textAlign="center"
-        fontWeight="bold"
-        sx={{ mb: 4, color: "#2c3e50" }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "linear-gradient(135deg, #f5f5dc 0%, #e8e4d9 100%)",
+        py: 6,
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "200px",
+          background: "linear-gradient(to bottom, #8B4513 0%, #A0522D 100%)",
+          zIndex: -1,
+        },
+      }}
+    >
+      <Container
+        maxWidth="lg"
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          background: "rgba(255, 255, 255, 0.95)",
+          p: { xs: 2, md: 4 },
+          borderRadius: "20px",
+          boxShadow: "0px 10px 30px rgba(139, 69, 19, 0.2)",
+          border: "2px solid #D2B48C",
+          backdropFilter: "blur(10px)",
+        }}
       >
-        📚 รายการหนังสือ
-      </Typography>
+        {/* Header Banner */}
+        <HeaderBanner />
 
-      {isLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
-          <CircularProgress size={60} />
-        </Box>
-      ) : (
-        <Grid container spacing={4}>
-          {booksData.map((book) => (
-            <Grid item key={book._id} xs={12} sm={6} md={4}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  transition: "box-shadow 0.3s ease",
-                  "&:hover": {
-                    boxShadow: 8,
-                    transform: "translateY(-4px)",
-                  },
-                }}
-                elevation={4}
-              >
-                {book.coverImage ? (
-                  <CardMedia
-                    component="img"
-                    image={book.coverImage}
-                    alt={book.title}
-                    sx={{
-                      height: 220,
-                      objectFit: "cover",
-                      borderTopLeftRadius: 12,
-                      borderTopRightRadius: 12,
-                      transition: "transform 0.3s ease",
-                      "&:hover": {
-                        transform: "scale(1.05)",
-                      },
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      height: 220,
-                      bgcolor: "#e0e0e0",
-                      borderTopLeftRadius: 12,
-                      borderTopRightRadius: 12,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#9e9e9e",
-                      fontSize: 24,
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ไม่มีรูปปก
-                  </Box>
-                )}
+        {/* Auth Section */}
+        <AuthSection user={user} onLogout={handleLogout} />
 
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                    gutterBottom
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={book.title}
-                  >
-                    {book.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={book.author}
-                  >
-                    ✍️ {book.author}
-                  </Typography>
+        {/* Add New Book Button (เฉพาะเมื่อ login แล้ว) */}
+        {user && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{
+              mb: 4,
+              bgcolor: "#8B4513",
+              "&:hover": { bgcolor: "#A0522D" },
+              borderRadius: "12px",
+              fontFamily: "'Georgia', serif",
+              textTransform: "none",
+              px: 4,
+              boxShadow: "0px 4px 12px rgba(139, 69, 19, 0.3)",
+            }}
+            onClick={() => setIsNewDialogOpen(true)}
+          >
+            ➕ เพิ่มหนังสือใหม่
+          </Button>
+        )}
 
-                  {"rating" in book && book.rating !== undefined && (
-                    <Stack direction="row" alignItems="center" spacing={1} mt={1}>
-                      <Rating
-                        name="read-only"
-                        value={book.rating}
-                        precision={0.1}
-                        readOnly
-                        size="small"
-                      />
-                      <Typography variant="body2" color="text.secondary">
-                        {book.rating.toFixed(1)}
-                      </Typography>
-                    </Stack>
-                  )}
-                </CardContent>
+        {/* Search Bar */}
+        <SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
-                <CardActions sx={{ px: 2, pb: 2 }}>
-                  <Link href={`/book/${book._id}`} passHref>
-                    <Button
-                      size="medium"
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      sx={{ fontWeight: "bold" }}
-                    >
-                      ดูรายละเอียด
-                    </Button>
-                  </Link>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
-    </Container>
+        {/* Book List */}
+        <BookList
+          books={booksData}
+          user={user}
+          searchTerm={searchTerm}
+          isLoading={isLoading}
+          onEdit={openEditDialog}
+          onDelete={handleDeleteBook}
+        />
+
+        {/* Add New Book Modal */}
+        <AddBookModal
+          open={isNewDialogOpen}
+          onClose={() => setIsNewDialogOpen(false)}
+          newBook={newBook}
+          onNewBookChange={handleNewBookChange}
+          onSubmit={handleNewBook}
+        />
+
+        {/* Edit Book Modal */}
+        <EditBookModal
+          open={isEditDialogOpen}
+          onClose={() => setIsEditDialogOpen(false)}
+          editBook={editBook}
+          onEditBookChange={handleEditBookChange}
+          onSubmit={handleUpdateBook}
+        />
+      </Container>
+    </Box>
   );
 }
